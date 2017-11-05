@@ -1,0 +1,62 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: joker-greetings
+spec:
+  selector:
+    app: joker-greetings
+  ports:
+    - port: 8080
+      name: http
+  type: NodePort
+---
+kind: Deployment
+apiVersion: apps/v1beta1
+metadata:
+  name: joker-greetings
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: joker-greetings
+    spec:
+      containers:
+      - name: joker-greetings
+        image: localhost:5000/joker-greetings:3
+        imagePullPolicy: Always
+        volumeMounts:
+          - name: joker-config-volume
+            mountPath: /app-config/
+      volumes:
+        - name: joker-config-volume
+          configMap:
+            name: joker-config
+      imagePullSecrets:
+      - name: regsecret
+      restartPolicy: Always
+---
+kind: Ingress
+apiVersion: extensions/v1beta1
+metadata:
+  name: joker-greetings
+spec:
+  rules:
+    - host: kubernetes.local
+      http:
+        paths:
+        - path: /joker-greetings
+          backend:
+            serviceName: joker-greetings
+            servicePort: 8080
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: joker-config
+data:
+  application.properties: |
+    greeting.name=Hi
+    hello=world
+---
